@@ -1,0 +1,6 @@
+credentials.json
+token.json
+uploads/
+output_sent/
+__pycache__/
+*.pyc

@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Job Mailer</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;margin:0;padding:30px}
+.card{background:#fff;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h1{margin-top:0}
+input,textarea,select,button{padding:8px;margin:4px 0;width:100%;box-sizing:border-box}
+button{background:#0b5cff;color:#fff;border:0;border-radius:6px;cursor:pointer;font-weight:bold}
+button.secondary{background:#555}
+.job{border-left:4px solid #0b5cff}
+.sent{border-left-color:#1a9c50}
+.error{border-left-color:#d33}
+small{color:#666}
+</style>
+</head>
+<body>
+<h1>Job Mailer</h1>
+
+<div class="card">
+<h2>Gmail Connection</h2>
+{% if connected %}<p>Connected.</p>{% else %}<a href="/authorize"><button>Connect Gmail</button></a>{% endif %}
+</div>
+
+<div class="card">
+<h2>1. Upload Screenshots and Resumes</h2>
+<form action="/upload" method="post" enctype="multipart/form-data">
+<label>Job screenshots</label>
+<input type="file" name="screenshots" accept="image/*" multiple required>
+<label>Resumes</label>
+<input type="file" name="resumes" accept=".pdf,.doc,.docx" multiple>
+<label>Resume tags, in upload order</label>
+<input type="text" name="resume_tags" placeholder="vapt, grc, dfir, soc">
+<button type="submit">Upload Files</button>
+</form>
+</div>
+
+<div class="card">
+<h2>2. Process Screenshots</h2>
+<form action="/process" method="post"><button type="submit">Extract Emails, Match Resumes, Create Drafts</button></form>
+</div>
+
+<div class="card">
+<h2>Uploaded Resumes</h2>
+{% for r in resumes %}<div>{{ r }}</div>{% else %}<p>No resumes uploaded.</p>{% endfor %}
+</div>
+
+<div class="card">
+<h2>3. Review and Send</h2>
+{% for job in jobs %}
+<div class="card job {{ 'sent' if 'sent' in job.status else ('error' if 'error' in job.status else '') }}">
+<h3>{{ job.role or 'Detected Job' }} — {{ job.company or 'Unknown Company' }}</h3>
+<p>Screenshot: {{ job.screenshot }}</p>
+<p>Emails found: {{ job.emails|join(', ') or 'None' }}</p>
+<p>Status: {{ job.status }}</p>
+<form action="/update/{{ job.id }}" method="post">
+<label>Send to</label><input type="email" name="to" value="{{ job.to or (job.emails[0] if job.emails else '') }}" required>
+<label>Subject</label><input type="text" name="subject" value="{{ job.subject }}">
+<label>Body</label><textarea name="body" rows="10">{{ job.body }}</textarea>
+<label>Resume</label>
+<select name="resume">
+{% for r in resumes %}<option value="{{ r }}" {{ 'selected' if r == job.resume }}>{{ r }}</option>{% endfor %}
+</select>
+<button type="submit" class="secondary">Save Changes</button>
+</form>
+<form action="/send/{{ job.id }}" method="post"><button type="submit">Send This Email</button></form>
+</div>
+{% else %}<p>No processed jobs yet.</p>{% endfor %}
+</div>
+</body>
+</html>
